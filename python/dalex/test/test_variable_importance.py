@@ -230,5 +230,34 @@ class FeatureImportanceTestTitanic(unittest.TestCase):
         self.assertIsInstance(fig5, Figure)
 
 
+class FeatureImportanceLossFunctionTest(unittest.TestCase):
+    def test_r2(self):
+        import pandas as pd
+        from sklearn.linear_model import LinearRegression
+        rng = np.random.default_rng(0)
+        X = pd.DataFrame({'a': rng.normal(size=300), 'b': rng.normal(size=300)})
+        y = 2 * X['a'] + rng.normal(scale=2.0, size=300)
+        model = LinearRegression().fit(X, y)
+        exp = dx.Explainer(model, X, y, verbose=False)
+
+        vi = exp.model_parts(loss_function='r2', N=None, B=1, random_state=0)
+        full_model = vi.result.loc[vi.result.variable == '_full_model_', 'dropout_loss'].iloc[0]
+        self.assertTrue(np.isclose(full_model, model.score(X, y)))
+        self.assertTrue(np.isclose(full_model, exp.model_performance().result['r2'].iloc[0]))
+
+    def test_r2_aspect(self):
+        from dalex.aspect._model_aspect_importance import checks as aspect_importance_checks
+        from dalex.aspect._model_triplot import checks as triplot_checks
+        rng = np.random.default_rng(0)
+        observed = rng.normal(size=300)
+        predicted = 0.5 * observed + rng.normal(scale=0.5, size=300)
+        expected = 1 - ((observed - predicted) ** 2).mean() / observed.var()
+
+        for check_loss_function in (aspect_importance_checks.check_loss_function,
+                                    triplot_checks.check_loss_function):
+            loss_function = check_loss_function('r2')
+            self.assertTrue(np.isclose(loss_function(observed, predicted), expected))
+
+
 if __name__ == '__main__':
     unittest.main()

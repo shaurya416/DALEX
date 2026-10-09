@@ -3,6 +3,8 @@ import pandas as pd
 from copy import deepcopy
 from warnings import warn
 
+from ... import _global_utils
+
 
 def check_random_state(random_state):
     if random_state is not None:
@@ -26,7 +28,7 @@ def check_new_observation(new_observation, explainer):
     new_observation_ = deepcopy(new_observation)
     if isinstance(new_observation_, pd.Series):
         new_observation_ = new_observation_.to_frame().T
-        new_observation_.columns = explainer.data.columns
+        new_observation_ = _global_utils.set_columns(new_observation_, explainer.data.columns)
     elif isinstance(new_observation_, np.ndarray):
         if new_observation_.ndim == 1:
             # make 1D array 2D
@@ -47,7 +49,7 @@ def check_new_observation(new_observation, explainer):
         if new_observation.shape[0] != 1:
             raise ValueError("Wrong new_observation dimension")
 
-        new_observation_.columns = explainer.data.columns
+        new_observation_ = _global_utils.set_columns(new_observation_, explainer.data.columns)
     else:
         raise TypeError(
             "new_observation must be a numpy.ndarray or pandas.Series or pandas.DataFrame"

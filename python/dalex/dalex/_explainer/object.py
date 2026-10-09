@@ -296,34 +296,36 @@ class Explainer:
             _data = deepcopy(self.data)
             self.data = self.data.iloc[I, :]
 
-        if _type == 'break_down_interactions' or _type == 'break_down':
-            _predict_parts = BreakDown(
-                type=_type,
-                keep_distributions=keep_distributions,
-                order=order,
-                interaction_preference=interaction_preference
-            )
-        elif _type == 'shap':
-            _predict_parts = Shap(
-                keep_distributions=keep_distributions,
-                path=path,
-                B=B,
-                processes=processes,
-                random_state=random_state
-            )
-        elif _type == 'shap_wrapper':
-            _global_checks.global_check_import('shap', 'SHAP explanations')
-            _predict_parts = ShapWrapper('predict_parts')
-        else:
-            raise TypeError("Wrong type parameter.")
+        try:
+            if _type == 'break_down_interactions' or _type == 'break_down':
+                _predict_parts = BreakDown(
+                    type=_type,
+                    keep_distributions=keep_distributions,
+                    order=order,
+                    interaction_preference=interaction_preference
+                )
+            elif _type == 'shap':
+                _predict_parts = Shap(
+                    keep_distributions=keep_distributions,
+                    path=path,
+                    B=B,
+                    processes=processes,
+                    random_state=random_state
+                )
+            elif _type == 'shap_wrapper':
+                _global_checks.global_check_import('shap', 'SHAP explanations')
+                _predict_parts = ShapWrapper('predict_parts')
+            else:
+                raise TypeError("Wrong type parameter.")
 
-        _predict_parts.fit(self, new_observation, **kwargs)
-        
+            _predict_parts.fit(self, new_observation, **kwargs)
+        finally:
+            # restore the original data, also when the calculation fails
+            if isinstance(N, int):
+                self.data = _data
+
         if label:
             _predict_parts.result['label'] = label
-
-        if isinstance(N, int):
-            self.data = _data
 
         return _predict_parts
 

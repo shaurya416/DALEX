@@ -200,5 +200,26 @@ class CeterisParibusTestTitanic(unittest.TestCase):
         self.assertIsInstance(fig8, Figure)
 
 
+class CeterisParibusNewObservationTest(unittest.TestCase):
+    def setUp(self):
+        from sklearn.linear_model import LinearRegression
+        rng = np.random.default_rng(0)
+        self.X = pd.DataFrame({'a': rng.normal(size=200), 'b': rng.normal(size=200)})
+        self.y = 10 * self.X['a']
+        self.model = LinearRegression().fit(self.X, self.y)
+        self.exp = dx.Explainer(self.model, self.X, self.y, verbose=False)
+        self.observation = pd.DataFrame({'a': [1.0], 'b': [-3.0]})
+
+    def test_columns_matched_by_name(self):
+        reordered = self.observation[['b', 'a']]
+        expected = self.model.predict(self.observation)[0]
+
+        for new_observation in (reordered, reordered.iloc[0]):
+            cp = self.exp.predict_profile(new_observation, verbose=False)
+            self.assertEqual(cp.new_observation['a'].iloc[0], 1.0)
+            self.assertEqual(cp.new_observation['b'].iloc[0], -3.0)
+            self.assertTrue(np.isclose(cp.new_observation['_yhat_'].iloc[0], expected))
+
+
 if __name__ == '__main__':
     unittest.main()

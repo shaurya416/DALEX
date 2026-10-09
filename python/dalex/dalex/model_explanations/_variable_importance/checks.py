@@ -10,7 +10,7 @@ def check_loss_function(loss_function):
         'mse': mse,
         'mae': mae,
         'mad': mad,
-        'r2': r2,
+        'r2': loss_r2,
         '1-auc': loss_one_minus_auc,
         'auc': loss_one_minus_auc  # semi backward compatibility
     }

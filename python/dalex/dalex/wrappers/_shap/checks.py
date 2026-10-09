@@ -4,6 +4,8 @@ import pandas as pd
 from copy import deepcopy
 import warnings
 
+from ... import _global_utils
+
 def check_shap_explainer_type(shap_explainer_type, model):
     if shap_explainer_type is not None and not isinstance(shap_explainer_type, str):
         raise ValueError("'shap_explainer_type' parameter in  must be one of {'TreeExplainer', 'DeepExplainer',"
@@ -62,7 +64,7 @@ def check_new_observation_predict_parts(new_observation, explainer):
     
     if isinstance(new_observation_, pd.Series):
         new_observation_ = new_observation_.to_frame().T
-        new_observation_.columns = explainer.data.columns
+        new_observation_ = _global_utils.set_columns(new_observation_, explainer.data.columns)
     elif isinstance(new_observation_, np.ndarray):
         if new_observation_.ndim == 1:
             # make 1D array 2D
@@ -84,7 +86,7 @@ def check_new_observation_predict_parts(new_observation, explainer):
         if new_observation.shape[0] != 1:
             raise ValueError(error_dim_val)
 
-        new_observation_.columns = explainer.data.columns
+        new_observation_ = _global_utils.set_columns(new_observation_, explainer.data.columns)
     else:
         raise TypeError("new_observation must be a numpy.ndarray or pandas.Series or pandas.DataFrame")
 

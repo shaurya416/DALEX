@@ -251,5 +251,43 @@ class PredictPartsTestTitanic(unittest.TestCase):
         self.assertIsInstance(fig5, Figure)
 
 
+class PredictPartsNewObservationTest(unittest.TestCase):
+    def setUp(self):
+        from sklearn.linear_model import LinearRegression
+        rng = np.random.default_rng(0)
+        self.X = pd.DataFrame({'a': rng.normal(size=200), 'b': rng.normal(size=200)})
+        self.y = 10 * self.X['a']
+        self.model = LinearRegression().fit(self.X, self.y)
+        self.exp = dx.Explainer(self.model, self.X, self.y, verbose=False)
+        self.observation = pd.DataFrame({'a': [1.0], 'b': [-3.0]})
+
+    def test_columns_matched_by_name(self):
+        reordered = self.observation[['b', 'a']]
+        expected = self.model.predict(self.observation)[0]
+
+        for new_observation in (reordered, reordered.iloc[0]):
+            for _type in ('break_down', 'break_down_interactions'):
+                bd = self.exp.predict_parts(new_observation, type=_type)
+                prediction = bd.result.loc[bd.result.variable == 'prediction', 'contribution'].iloc[0]
+                self.assertTrue(np.isclose(prediction, expected))
+                self.assertIn('a = 1.0', bd.result.variable.tolist())
+                self.assertIn('b = -3.0', bd.result.variable.tolist())
+
+            shap = self.exp.predict_parts(new_observation, type='shap', B=2, random_state=0)
+            self.assertTrue(np.isclose(shap.prediction, expected))
+            values = shap.result.groupby('variable_name').variable_value.first()
+            self.assertEqual(values['a'], 1.0)
+            self.assertEqual(values['b'], -3.0)
+
+    def test_data_restored_after_error(self):
+        with self.assertRaises(ValueError):
+            self.exp.predict_parts(np.array([1.0, 2.0, 3.0]), type='break_down', N=50)
+        pd.testing.assert_frame_equal(self.exp.data, self.X)
+
+        with self.assertRaises(ValueError):
+            self.exp.predict_parts(np.array([1.0, 2.0, 3.0]), type='shap', N=50, B=2)
+        pd.testing.assert_frame_equal(self.exp.data, self.X)
+
+
 if __name__ == '__main__':
     unittest.main()

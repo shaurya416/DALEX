@@ -2,7 +2,9 @@
 
 ### development
 
-...
+* `new_observation` passed as `pd.DataFrame` or `pd.Series` to `predict_parts()`, `predict_profile()` and the `aspect` module is now matched to `data` by column name; previously columns were renamed by position, so a reordered observation was silently explained with swapped values
+* `predict_parts(..., N=...)` now restores the explainer's `data` when the calculation raises an error; previously the explainer kept the `N`-row sample, misaligned with `y`, and later explanations were silently wrong
+* `loss_function='r2'` in `model_parts()` and the `aspect` module now computes R2 against the observed `y`; previously the arguments were swapped and the value was normalized by the variance of predictions
 
 ### v1.8.0 (2026-01-20)
 

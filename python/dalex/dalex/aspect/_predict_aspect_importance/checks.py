@@ -70,7 +70,7 @@ def check_variable_groups(variable_groups, explainer):
                     "'variable_groups' is a dict of lists of variables"
                 )
 
-            wrong_names[i] = np.in1d(variable_groups_copy[key], explainer.data.columns).all()
+            wrong_names[i] = np.isin(variable_groups_copy[key], explainer.data.columns).all()
 
         wrong_names = not wrong_names.all()
 

@@ -239,7 +239,8 @@ def resample(protected, y, type = 'uniform', probs = None,  verbose = True):
                     if value == 0:
                         indices += list(sorted_current_case[:expected])
                     if value == 1:
-                        indices += list(sorted_current_case[-expected:])
+                        # keep the `expected` highest; [-0:] would keep the whole case
+                        indices += list(sorted_current_case[len(sorted_current_case) - expected:])
             else:
                 if type == 'uniform':
                     u_ind = list(np.repeat(current_case, expected // actual))

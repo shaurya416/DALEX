@@ -48,7 +48,7 @@ def check_classification_parameters(y, y_hat, protected, privileged, verbose):
     if list(np.unique(y)) != [0, 1]:
         raise ParameterCheckError("model must predict binary target")
 
-    if not 0 <= y_hat.all() <= 1:
+    if np.any(y_hat < 0) or np.any(y_hat > 1):
         raise ParameterCheckError("y_hat must have probabilistic output between 0 and 1")
 
     return

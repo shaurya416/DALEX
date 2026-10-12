@@ -527,5 +527,43 @@ class FairnessTest(unittest.TestCase):
         with self.assertRaises(dx.fairness._basics.exceptions.ParameterCheckError):
             roc_pivot(exp, protected, privileged, cutoff=0.5, theta='sth_else')
 
+
+class FairnessInputTest(unittest.TestCase):
+    def test_y_hat_outside_unit_interval(self):
+        y = np.array([0, 1, 0, 1, 0, 1, 0, 1])
+        protected = np.array(['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b'])
+
+        # scores (e.g. decision_function) are not probabilities
+        y_hat = np.array([-3., 2., -1., 4., -2., 5., 0.3, 7.])
+        with self.assertRaises(dx.fairness._basics.exceptions.ParameterCheckError):
+            dx.fairness.GroupFairnessClassification(y=y, y_hat=y_hat, protected=protected,
+                                                    privileged='a', label='scores')
+
+        y_hat = np.array([0., 1., 0.2, 0.9, 0.1, 0.8, 0.4, 1.])
+        gfco = dx.fairness.GroupFairnessClassification(y=y, y_hat=y_hat, protected=protected,
+                                                       privileged='a', label='probabilities')
+        self.assertIsInstance(gfco, dx.fairness.GroupFairnessClassification)
+
+    def test_resample_preferential_empty_subgroup(self):
+        # subgroup 'x' has 2 rows and the favourable class covers 20% of y,
+        # so the expected size of ('x', 1) is round(2 * 20 / 100) = 0
+        protected = np.array(['x'] * 2 + ['y'] * 98)
+        y = np.zeros(100, dtype=int)
+        y[0] = 1
+        y[2:21] = 1
+        probs = np.linspace(0.01, 0.99, 100)
+
+        weights = reweight(protected, y, verbose=False)
+        for subgroup in ('x', 'y'):
+            for value in (0, 1):
+                case = (protected == subgroup) & (y == value)
+                expected = round(case.sum() * weights[case][0])
+
+                for type in ('uniform', 'preferential'):
+                    indices = resample(protected, y, type=type, probs=probs, verbose=False)
+                    resampled = (protected[indices] == subgroup) & (y[indices] == value)
+                    self.assertEqual(resampled.sum(), expected, (subgroup, value, type))
+
+
 if __name__ == '__main__':
     unittest.main()

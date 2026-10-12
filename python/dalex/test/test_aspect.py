@@ -842,3 +842,31 @@ class AspectTestFifa(unittest.TestCase):
         fig8 = mt.plot(show=False, digits=2, bar_width=22, width=1200, title='Test', widget=True)
         self.assertIsInstance(fig8, HBox)
         
+
+class AspectVariableGroupsTest(unittest.TestCase):
+    def setUp(self):
+        from sklearn.linear_model import LinearRegression
+        rng = np.random.default_rng(0)
+        self.X = pd.DataFrame({'a': rng.normal(size=100), 'b': rng.normal(size=100), 'c': rng.normal(size=100)})
+        y = 2 * self.X['a'] + self.X['b']
+        model = LinearRegression().fit(self.X, y)
+        self.exp = dx.Explainer(model, self.X, y, verbose=False)
+
+    def test_check_variable_groups(self):
+        from dalex.aspect import checks as aspect_checks
+        from dalex.aspect._model_triplot import checks as triplot_checks
+        from dalex.aspect._predict_aspect_importance import checks as importance_checks
+
+        for check_variable_groups in (aspect_checks.check_variable_groups,
+                                      triplot_checks.check_variable_groups,
+                                      importance_checks.check_variable_groups):
+            groups = check_variable_groups({'ab': ['a', 'b'], 'c': ['c']}, self.exp)
+            self.assertEqual(list(groups['ab']), ['a', 'b'])
+            with self.assertRaises(ValueError):
+                check_variable_groups({'ab': ['a', 'not_a_column']}, self.exp)
+
+    def test_predict_parts(self):
+        aspect = dx.Aspect(self.exp)
+        pai = aspect.predict_parts(self.X.iloc[[0]], N=50, B=2, random_state=0)
+        self.assertIsInstance(pai, PredictAspectImportance)
+        self.assertEqual(set(np.concatenate(pai.result.variable_names.values)), {'a', 'b', 'c'})

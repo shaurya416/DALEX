@@ -5,6 +5,9 @@
 * `new_observation` passed as `pd.DataFrame` or `pd.Series` to `predict_parts()`, `predict_profile()` and the `aspect` module is now matched to `data` by column name; previously columns were renamed by position, so a reordered observation was silently explained with swapped values
 * `predict_parts(..., N=...)` now restores the explainer's `data` when the calculation raises an error; previously the explainer kept the `N`-row sample, misaligned with `y`, and later explanations were silently wrong
 * `loss_function='r2'` in `model_parts()` and the `aspect` module now computes R2 against the observed `y`; previously the arguments were swapped and the value was normalized by the variance of predictions
+* `numpy>=2.4.0` compatibility: replace the removed `np.in1d` with `np.isin` in the `aspect` module; previously `Aspect.predict_parts()` raised an `AttributeError`
+* `model_fairness()` and `GroupFairnessClassification` now raise an error when `y_hat` is outside of `[0, 1]`; previously this check never triggered, so scores that are not probabilities were silently thresholded at `cutoff`
+* `resample(type='preferential')` now drops a subgroup's favourable observations when their expected count rounds to `0`; previously all of them were kept
 
 ### v1.8.0 (2026-01-20)
 

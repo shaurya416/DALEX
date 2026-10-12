@@ -140,5 +140,29 @@ class AggregatedProfilesTestTitanic(unittest.TestCase):
         self.assertIsInstance(fig9, Figure)
 
 
+class AggregatedProfilesLabelTest(unittest.TestCase):
+    def test_label_keeps_groups(self):
+        from sklearn.linear_model import LinearRegression
+        rng = np.random.default_rng(0)
+        X = pd.DataFrame({'a': rng.normal(size=100), 'g': rng.integers(0, 2, size=100)})
+        y = X['a'] + X['g'] + rng.normal(size=100)
+        exp = dx.Explainer(LinearRegression().fit(X, y), X, y, label='lr', verbose=False)
+
+        for type in ('partial', 'accumulated', 'conditional'):
+            default = exp.model_profile(type=type, variables='a', groups='g', N=None, verbose=False)
+            custom = exp.model_profile(type=type, variables='a', groups='g', N=None, label='custom', verbose=False)
+
+            self.assertEqual(sorted(default.result['_label_'].unique()), ['lr_0', 'lr_1'])
+            # the label replaces the model name and keeps one profile per group
+            self.assertEqual(sorted(custom.result['_label_'].unique()), ['custom_0', 'custom_1'])
+            pd.testing.assert_series_equal(custom.result['_label_'],
+                                           default.result['_label_'].str.replace('lr_', 'custom_'))
+            fig = custom.plot(show=False)
+            self.assertEqual(sorted(trace.name for trace in fig.data), ['custom_0', 'custom_1'])
+
+        plain = exp.model_profile(variables='a', N=None, label='custom', verbose=False)
+        self.assertEqual(plain.result['_label_'].unique().tolist(), ['custom'])
+
+
 if __name__ == '__main__':
     unittest.main()

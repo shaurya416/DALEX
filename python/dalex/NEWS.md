@@ -8,6 +8,9 @@
 * `numpy>=2.4.0` compatibility: replace the removed `np.in1d` with `np.isin` in the `aspect` module; previously `Aspect.predict_parts()` raised an `AttributeError`
 * `model_fairness()` and `GroupFairnessClassification` now raise an error when `y_hat` is outside of `[0, 1]`; previously this check never triggered, so scores that are not probabilities were silently thresholded at `cutoff`
 * `resample(type='preferential')` now drops a subgroup's favourable observations when their expected count rounds to `0`; previously all of them were kept
+* `dx.Explainer` now extracts `model_type='classification'` for scikit-learn classifiers without `predict_proba` (e.g. `RidgeClassifier`, `LinearSVC`) when `scikit-learn` no longer defines `_estimator_type`; previously they were silently treated as `'regression'`
+* `model_profile(groups=..., label=...)` now keeps one profile per group, labelled `label_group`; previously the label replaced the group names and all groups were merged into one profile
+* `model_fairness()` and `GroupFairnessRegression` now compute the regression measures on `protected` and `privileged` converted to strings, as for classification; previously a list `protected` raised a `TypeError`, a numeric `protected` with a string `privileged` raised a `ValueError`, and with a numeric `privileged` `fairness_check()` raised a `KeyError`
 
 ### v1.8.0 (2026-01-20)
 

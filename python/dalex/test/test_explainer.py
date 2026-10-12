@@ -117,3 +117,27 @@ class ExplainerTest(unittest.TestCase):
             dx.Explainer(model, X, y, verbose=False, model_type='regression',
                          predict_function=predict_function_return_one_element_array)
             assert issubclass(w[-1].category, UserWarning)
+
+
+class ExplainerModelTypeTest(unittest.TestCase):
+    def test_sklearn_classifier_without_predict_proba(self):
+        import pandas as pd
+        from sklearn.linear_model import LinearRegression, RidgeClassifier
+        from sklearn.svm import LinearSVC
+
+        rng = np.random.default_rng(0)
+        X = pd.DataFrame({'a': rng.normal(size=100), 'b': rng.normal(size=100)})
+        y = (X['a'] + rng.normal(scale=0.5, size=100) > 0).astype(int)
+
+        classifiers = (RidgeClassifier(),
+                       LinearSVC(),
+                       Pipeline(steps=[('scaler', StandardScaler()), ('classifier', RidgeClassifier())]))
+        for model in classifiers:
+            model.fit(X, y)
+            self.assertFalse(hasattr(model, 'predict_proba'))
+            exp = dx.Explainer(model, X, y, verbose=False)
+            self.assertEqual(exp.model_type, 'classification', type(model).__name__)
+
+        regressor = LinearRegression().fit(X, X['a'])
+        exp = dx.Explainer(regressor, X, X['a'], verbose=False)
+        self.assertEqual(exp.model_type, 'regression')

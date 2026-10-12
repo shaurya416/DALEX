@@ -564,6 +564,28 @@ class FairnessInputTest(unittest.TestCase):
                     resampled = (protected[indices] == subgroup) & (y[indices] == value)
                     self.assertEqual(resampled.sum(), expected, (subgroup, value, type))
 
+    def test_regression_protected_types(self):
+        import contextlib
+        import io
+        from sklearn.linear_model import LinearRegression
+        rng = np.random.default_rng(0)
+        g = rng.integers(0, 2, size=300)
+        X = pd.DataFrame({'a': rng.normal(size=300), 'b': rng.normal(size=300)})
+        y = 2 * X['a'] + 1.5 * g + rng.normal(size=300)
+        exp = dx.Explainer(LinearRegression().fit(X, y), X, y, verbose=False)
+
+        expected = exp.model_fairness(protected=g.astype(str), privileged='1')
+        self.assertEqual(expected.result.index.tolist(), ['0'])
+
+        # protected is converted to strings, as for classification
+        for protected, privileged in ((g, '1'), (g, 1), (list(g), 1), (list(g.astype(str)), '1'),
+                                      (pd.Series(g), '1')):
+            mgf = exp.model_fairness(protected=protected, privileged=privileged)
+            pd.testing.assert_frame_equal(mgf.result, expected.result)
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                mgf.fairness_check()
+            self.assertIn("based on '1'", out.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()

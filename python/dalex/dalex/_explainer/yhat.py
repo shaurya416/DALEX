@@ -101,11 +101,17 @@ def get_predict_function_and_model_type(model, model_class):
 
     model_type_ = None
     # additional extraction sklearn
-    if hasattr(model, '_estimator_type'):
-        if model._estimator_type == 'classifier':
-            model_type_ = 'classification'
-        elif model._estimator_type == 'regressor':
-            model_type_ = 'regression'
+    estimator_type = getattr(model, '_estimator_type', None)
+    if estimator_type is None and hasattr(model, '__sklearn_tags__'):
+        # scikit-learn removed `_estimator_type`, the type is now kept in the estimator tags
+        try:
+            estimator_type = model.__sklearn_tags__().estimator_type
+        except (AttributeError, TypeError):
+            estimator_type = None
+    if estimator_type == 'classifier':
+        model_type_ = 'classification'
+    elif estimator_type == 'regressor':
+        model_type_ = 'regression'
 
     # default extraction
     if hasattr(model, 'predict_proba'):

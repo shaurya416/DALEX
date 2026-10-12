@@ -721,7 +721,11 @@ class Explainer:
         _model_profile.fit(_ceteris_paribus, verbose)
 
         if label:
-            _model_profile.result['_label_'] = label
+            if '_groups_' in _model_profile.result.columns:
+                # keep the group suffix, otherwise all groups merge into one profile
+                _model_profile.result['_label_'] = label + '_' + _model_profile.result['_groups_']
+            else:
+                _model_profile.result['_label_'] = label
                 
         return _model_profile
 
